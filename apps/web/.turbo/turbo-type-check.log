@@ -1,0 +1,15 @@
+
+> @aura-flow/web@1.0.0 type-check C:\Repos\Nakoliss\Webapps\AuraFlow\apps\web
+> astro check
+
+14:33:06 [WARN] [vite] [33m(!) Experimental optimizeDeps.disabled and deps pre-bundling during build were removed in Vite 5.1.
+    To disable the deps optimizer, set optimizeDeps.noDiscovery to true and optimizeDeps.include as undefined or empty.
+    Please remove optimizeDeps.disabled from your config.
+    
+  [39m
+14:33:06 [check] Getting diagnostics for Astro files in C:\Repos\Nakoliss\Webapps\AuraFlow\apps\web...
+Result (4 files): 
+- 0 errors
+- 0 warnings
+- 0 hints
+

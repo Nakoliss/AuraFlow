@@ -1,0 +1,16 @@
+
+> @aura-flow/ui@1.0.0 lint C:\Repos\Nakoliss\Webapps\AuraFlow\packages\ui
+> eslint src/**/*.{ts,tsx}
+
+
+Oops! Something went wrong! :(
+
+ESLint: 8.45.0
+
+ESLint couldn't find the config "@typescript-eslint/recommended" to extend from. Please check that the name of the config is correct.
+
+The config "@typescript-eslint/recommended" was referenced from the config file in "C:\Repos\Nakoliss\Webapps\AuraFlow\.eslintrc.js".
+
+If you still have problems, please stop by https://eslint.org/chat/help to chat with the team.
+
+ ELIFECYCLE  Command failed with exit code 2.

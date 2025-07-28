@@ -1,0 +1,19 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/**/*",
+        "App.tsx",
+        "app.config.js"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        ".expo"
+    ]
+}

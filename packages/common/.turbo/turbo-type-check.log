@@ -1,0 +1,4 @@
+
+> @aura-flow/common@1.0.0 type-check C:\Repos\Nakoliss\Webapps\AuraFlow\packages\common
+> tsc --noEmit
+
