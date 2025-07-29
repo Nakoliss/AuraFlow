@@ -58,15 +58,24 @@
   - Write integration tests for authentication flows
   - _Requirements: 1.1, 1.2, 1.5_
 
-- [ ] 5. Create message generation service core
-- [ ] 5.1 Implement AI service adapters
+- [x] 5. Create message generation service core
+
+
+
+
+- [x] 5.1 Implement AI service adapters
+
+
   - Create OpenAI API client with proper error handling
   - Implement Anthropic API client as fallback option
   - Write prompt template system for different message categories
   - Create unit tests for API client functionality
   - _Requirements: 2.1, 2.2, 2.6_
 
-- [ ] 5.2 Build semantic deduplication system
+- [-] 5.2 Build semantic deduplication system
+
+
+
   - Implement pgvector embedding storage and retrieval
   - Create cosine similarity checking functions
   - Build lexical Bloom filter for trigram deduplication
@@ -74,6 +83,7 @@
   - _Requirements: 2.4, 6.11_
 
 - [ ] 5.3 Create message generation API endpoint
+
   - Implement POST /generate endpoint with category validation
   - Add rate limiting and quota enforcement for free/premium users
   - Integrate semantic caching to reduce API costs

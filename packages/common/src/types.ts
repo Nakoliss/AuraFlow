@@ -24,6 +24,14 @@ export interface User {
     timezone: string
 }
 
+export interface MessageRequest {
+    userId: string
+    category: MessageCategory
+    timeOfDay?: TimeOfDay
+    weatherContext?: WeatherBucket
+    locale: string
+}
+
 export interface GeneratedMessage {
     id: string
     userId?: string
