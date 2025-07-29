@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm test:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(gh repo sync:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
