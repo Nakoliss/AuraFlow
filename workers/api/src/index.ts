@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { MessageCategory } from '@aura-flow/common'
 import authRoutes from './routes/auth'
+import generateRoutes from './routes/generate'
+import dailyDropRoutes from './routes/daily-drop'
 
 const app = new Hono()
 
@@ -35,6 +37,12 @@ app.get('/health', (c) => {
 
 // Mount auth routes
 app.route('/auth', authRoutes)
+
+// Mount message generation routes
+app.route('/generate', generateRoutes)
+
+// Mount daily drop routes
+app.route('/daily-drop', dailyDropRoutes)
 
 // 404 handler
 app.notFound((c) => {
