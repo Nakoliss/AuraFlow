@@ -2,6 +2,7 @@
 import { executeQuery, executeTransaction } from './database'
 import { createLogger } from './logging'
 import { generateId } from './utils'
+import { seedAchievements } from './gamification/achievement-seeds'
 import type { MessageCategory, SubscriptionTier } from './types'
 
 const logger = createLogger('seeds')
@@ -258,25 +259,8 @@ class DatabaseSeeder {
     // Seed achievements table
     async seedAchievements(): Promise<void> {
         logger.info('Seeding achievements table')
-
-        for (const achievement of this.sampleAchievements) {
-            await executeQuery(
-                `INSERT INTO achievements (
-          id, name, description, icon, points_required, badge_color
-        ) VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (id) DO NOTHING`,
-                [
-                    achievement.id,
-                    achievement.name,
-                    achievement.description,
-                    achievement.icon,
-                    achievement.pointsRequired,
-                    achievement.badgeColor
-                ]
-            )
-        }
-
-        logger.info(`Seeded ${this.sampleAchievements.length} achievements`)
+        await seedAchievements()
+        logger.info('Achievement seeding completed')
     }
 
     // Seed generated messages table

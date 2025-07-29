@@ -1,6 +1,8 @@
 import { Entitlement, EntitlementType, User } from '../types'
 import { PaymentService } from './payment-service'
-import { logger } from '../logging'
+import { createLogger } from '../logging'
+
+const logger = createLogger('entitlement-validator')
 
 export class EntitlementValidator {
     constructor(private paymentService: PaymentService) { }
@@ -102,10 +104,10 @@ export class EntitlementValidator {
 
         const now = new Date()
         const hasPremiumCore = user.subscriptionStatus === 'premium_core' &&
-            user.premiumExpiresAt && user.premiumExpiresAt > now
+            Boolean(user.premiumExpiresAt && user.premiumExpiresAt > now)
 
         const hasVoicePack = user.subscriptionStatus === 'voice_pack' &&
-            user.voicePackExpiresAt && user.voicePackExpiresAt > now
+            Boolean(user.voicePackExpiresAt && user.voicePackExpiresAt > now)
 
         const entitlements: Entitlement[] = []
 

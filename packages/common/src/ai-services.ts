@@ -63,7 +63,7 @@ Avoid clichés and generic advice. Be specific and memorable.
 
   private static readonly WEATHER_CONTEXT: Record<WeatherBucket, string> = {
     sunny: 'The weather is sunny and bright. Incorporate themes of energy, optimism, and outdoor possibilities.',
-    rainy: 'The weather is rainy. Focus on cozy reflection, indoor productivity, or finding beauty in quiet moments.',
+    rain: 'The weather is rainy. Focus on cozy reflection, indoor productivity, or finding beauty in quiet moments.',
     cold: 'The weather is cold. Emphasize warmth, comfort, resilience, and inner strength.',
     hot: 'The weather is hot. Focus on staying cool, finding shade, hydration, or summer energy.'
   }

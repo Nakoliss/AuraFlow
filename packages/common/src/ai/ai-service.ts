@@ -1,8 +1,10 @@
 import { OpenAIService } from './openai-service'
 import { AnthropicService } from './anthropic-service'
 import { AIServiceConfig, AIServiceResponse, MessageRequest } from '../types'
-import { logger } from '../logging'
-import { AppError, ErrorType } from '../errors'
+import { createLogger } from '../logging'
+import { AppError, ErrorCode } from '../errors'
+
+const logger = createLogger('ai-service')
 
 export interface AIServiceOptions {
     openai: AIServiceConfig
@@ -81,13 +83,8 @@ export class AIService {
                 })
 
                 throw new AppError(
-                    ErrorType.EXTERNAL_API,
                     'All AI providers failed to generate message',
-                    'AI_PROVIDERS_FAILED',
-                    {
-                        primaryError: error instanceof Error ? error.message : 'Unknown error',
-                        fallbackError: fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
-                    }
+                    ErrorCode.EXTERNAL_SERVICE_ERROR
                 )
             }
         }

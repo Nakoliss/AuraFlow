@@ -16,13 +16,13 @@
   "dependencies": {
     "@aura-flow/common": "workspace:*",
     "@aura-flow/ui": "workspace:*",
+    "@astrojs/react": "^3.0.2",
     "astro": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.4.0",
-    "@astrojs/react": "^3.0.2",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "typescript": "^5.2.0",

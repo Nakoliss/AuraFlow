@@ -8,7 +8,9 @@ import {
 } from '../types'
 import { RevenueCatService } from './revenuecat-service'
 import { StripeService } from './stripe-service'
-import { logger } from '../logging'
+import { createLogger } from '../logging'
+
+const logger = createLogger('payment-service')
 import { AppError, ErrorCode } from '../errors'
 
 export interface PaymentServiceConfig {

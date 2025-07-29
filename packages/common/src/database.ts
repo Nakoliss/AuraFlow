@@ -250,3 +250,19 @@ export async function initializeDatabase(config?: DatabaseConfig): Promise<void>
 export async function closeDatabase(): Promise<void> {
     await db.close()
 }
+
+// Get a database client for transactions
+export async function getClient(): Promise<DatabaseClient> {
+    const pool = db.getPool()
+
+    // In a real implementation, this would get a client from the pool
+    // For now, we'll return a mock client that uses the pool
+    return {
+        query: async <T = any>(text: string, params?: any[]) => {
+            return await pool.query<T>(text, params)
+        },
+        release: () => {
+            // In real implementation, this would release the client back to pool
+        }
+    } as DatabaseClient & { release: () => void }
+}

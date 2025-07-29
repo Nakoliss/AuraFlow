@@ -1,4 +1,6 @@
-import { logger } from '../logging'
+import { createLogger } from '../logging'
+
+const logger = createLogger('bloom-filter')
 
 export interface BloomFilterConfig {
     expectedElements: number

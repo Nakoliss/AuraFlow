@@ -1,8 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { AIServiceConfig, AIServiceResponse, MessageRequest } from '../types'
 import { promptTemplateService } from '../prompts'
-import { logger } from '../logging'
-import { AppError, ErrorType } from '../errors'
+import { createLogger } from '../logging'
+import { AppError, ErrorCode } from '../errors'
+
+const logger = createLogger('anthropic-service')
 
 export class AnthropicService {
     private client: Anthropic
@@ -48,7 +50,7 @@ export class AnthropicService {
                 userId: request.userId
             })
 
-            const message = await this.client.messages.create({
+            const message = await (this.client as any).messages.create({
                 model: 'claude-3-haiku-20240307',
                 max_tokens: template.maxTokens,
                 temperature,
@@ -61,9 +63,8 @@ export class AnthropicService {
             const content = message.content[0]
             if (content.type !== 'text' || !content.text) {
                 throw new AppError(
-                    ErrorType.EXTERNAL_API,
                     'Anthropic returned non-text response',
-                    'ANTHROPIC_INVALID_RESPONSE'
+                    ErrorCode.EXTERNAL_SERVICE_ERROR
                 )
             }
 
@@ -98,31 +99,25 @@ export class AnthropicService {
                 // Handle specific Anthropic errors
                 if (error.status === 429) {
                     throw new AppError(
-                        ErrorType.RATE_LIMIT,
                         'Anthropic rate limit exceeded',
-                        'ANTHROPIC_RATE_LIMIT',
-                        { retryAfter: 60 }
+                        ErrorCode.RATE_LIMIT_ERROR
                     )
                 } else if (error.status === 401) {
                     throw new AppError(
-                        ErrorType.EXTERNAL_API,
                         'Anthropic authentication failed',
-                        'ANTHROPIC_AUTH_ERROR'
+                        ErrorCode.AUTHENTICATION_ERROR
                     )
-                } else if (error.status >= 500) {
+                } else if (error.status && error.status >= 500) {
                     throw new AppError(
-                        ErrorType.EXTERNAL_API,
                         'Anthropic server error',
-                        'ANTHROPIC_SERVER_ERROR'
+                        ErrorCode.EXTERNAL_SERVICE_ERROR
                     )
                 }
             }
 
             throw new AppError(
-                ErrorType.EXTERNAL_API,
                 'Failed to generate message with Anthropic',
-                'ANTHROPIC_GENERATION_ERROR',
-                { originalError: error instanceof Error ? error.message : 'Unknown error' }
+                ErrorCode.EXTERNAL_SERVICE_ERROR
             )
         }
     }
@@ -133,7 +128,7 @@ export class AnthropicService {
     async testConnection(): Promise<boolean> {
         try {
             // Test with a minimal message
-            await this.client.messages.create({
+            await (this.client as any).messages.create({
                 model: 'claude-3-haiku-20240307',
                 max_tokens: 10,
                 messages: [{ role: 'user', content: 'Hi' }]

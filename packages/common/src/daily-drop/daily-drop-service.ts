@@ -1,8 +1,10 @@
 import { AIService } from '../ai/ai-service'
 import { executeQuery, executeTransaction } from '../database'
 import { DailyDrop, DailyChallenge, MessageCategory } from '../types'
-import { logger } from '../logging'
-import { AppError, ErrorType } from '../errors'
+import { createLogger } from '../logging'
+import { AppError, ErrorCode } from '../errors'
+
+const logger = createLogger('daily-drop-service')
 import { promptTemplateService } from '../prompts'
 import { fallbackContentService } from './fallback-content'
 
@@ -81,7 +83,7 @@ export class DailyDropService {
 
             return {
                 dailyDrop,
-                dailyChallenge,
+                dailyChallenge: dailyChallenge || undefined,
                 wasGenerated: true,
                 usedFallback
             }
@@ -89,10 +91,8 @@ export class DailyDropService {
         } catch (error) {
             logger.error('Daily drop generation failed', { date, locale }, error as Error)
             throw new AppError(
-                ErrorType.INTERNAL,
                 `Failed to generate daily drop for ${date}`,
-                'DAILY_DROP_GENERATION_FAILED',
-                { date, locale, error: error instanceof Error ? error.message : 'Unknown error' }
+                ErrorCode.DATABASE_ERROR
             )
         }
     }
@@ -111,10 +111,8 @@ export class DailyDropService {
         } catch (error) {
             logger.error('Failed to fetch daily drop', { date, locale }, error as Error)
             throw new AppError(
-                ErrorType.INTERNAL,
                 'Failed to fetch daily drop',
-                'DAILY_DROP_FETCH_FAILED',
-                { date, locale }
+                ErrorCode.DATABASE_ERROR
             )
         }
     }
@@ -133,10 +131,8 @@ export class DailyDropService {
         } catch (error) {
             logger.error('Failed to fetch daily challenge', { date, locale }, error as Error)
             throw new AppError(
-                ErrorType.INTERNAL,
                 'Failed to fetch daily challenge',
-                'DAILY_CHALLENGE_FETCH_FAILED',
-                { date, locale }
+                ErrorCode.DATABASE_ERROR
             )
         }
     }
@@ -458,10 +454,8 @@ export class DailyDropService {
             }, error as Error)
 
             throw new AppError(
-                ErrorType.INTERNAL,
                 'Failed to retrieve historical daily drops',
-                'HISTORICAL_FETCH_FAILED',
-                { startDate, endDate, locale, limit }
+                ErrorCode.DATABASE_ERROR
             )
         }
     }
@@ -483,9 +477,8 @@ export class DailyDropService {
         } catch (error) {
             logger.error('Failed to cleanup old daily drops', {}, error as Error)
             throw new AppError(
-                ErrorType.INTERNAL,
                 'Failed to cleanup old daily drops',
-                'CLEANUP_FAILED'
+                ErrorCode.DATABASE_ERROR
             )
         }
     }

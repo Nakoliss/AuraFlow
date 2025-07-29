@@ -1,8 +1,10 @@
 import OpenAI from 'openai'
 import { AIServiceConfig, AIServiceResponse, MessageCategory, MessageRequest } from '../types'
 import { promptTemplateService } from '../prompts'
-import { logger } from '../logging'
-import { AppError, ErrorType } from '../errors'
+import { createLogger } from '../logging'
+import { AppError, ErrorCode } from '../errors'
+
+const logger = createLogger('openai-service')
 
 export class OpenAIService {
     private client: OpenAI
@@ -64,9 +66,8 @@ export class OpenAIService {
             const choice = completion.choices[0]
             if (!choice?.message?.content) {
                 throw new AppError(
-                    ErrorType.EXTERNAL_API,
                     'OpenAI returned empty response',
-                    'OPENAI_EMPTY_RESPONSE'
+                    ErrorCode.EXTERNAL_SERVICE_ERROR
                 )
             }
 
@@ -99,31 +100,25 @@ export class OpenAIService {
                 // Handle specific OpenAI errors
                 if (error.status === 429) {
                     throw new AppError(
-                        ErrorType.RATE_LIMIT,
                         'OpenAI rate limit exceeded',
-                        'OPENAI_RATE_LIMIT',
-                        { retryAfter: 60 }
+                        ErrorCode.RATE_LIMIT_ERROR
                     )
                 } else if (error.status === 401) {
                     throw new AppError(
-                        ErrorType.EXTERNAL_API,
                         'OpenAI authentication failed',
-                        'OPENAI_AUTH_ERROR'
+                        ErrorCode.AUTHENTICATION_ERROR
                     )
-                } else if (error.status >= 500) {
+                } else if (error.status && error.status >= 500) {
                     throw new AppError(
-                        ErrorType.EXTERNAL_API,
                         'OpenAI server error',
-                        'OPENAI_SERVER_ERROR'
+                        ErrorCode.EXTERNAL_SERVICE_ERROR
                     )
                 }
             }
 
             throw new AppError(
-                ErrorType.EXTERNAL_API,
                 'Failed to generate message with OpenAI',
-                'OPENAI_GENERATION_ERROR',
-                { originalError: error instanceof Error ? error.message : 'Unknown error' }
+                ErrorCode.EXTERNAL_SERVICE_ERROR
             )
         }
     }

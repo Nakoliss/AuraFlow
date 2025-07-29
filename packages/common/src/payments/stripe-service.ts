@@ -7,7 +7,9 @@ import {
     Platform,
     EntitlementType
 } from '../types'
-import { logger } from '../logging'
+import { createLogger } from '../logging'
+
+const logger = createLogger('stripe-service')
 import { AppError, ErrorCode } from '../errors'
 
 export interface StripeConfig {

@@ -81,6 +81,23 @@ export interface UserAchievement {
     earnedAt: Date
 }
 
+export type WisdomPointAction =
+    | 'app_open'
+    | 'daily_challenge_complete'
+    | 'content_share'
+    | 'daily_streak'
+    | 'achievement_unlock'
+    | 'referral_success'
+
+export interface WisdomPointTransaction {
+    id: string
+    userId: string
+    action: WisdomPointAction
+    points: number
+    description: string
+    createdAt: Date
+}
+
 export interface AudioCache {
     id: string
     messageId: string

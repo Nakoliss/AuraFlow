@@ -81,6 +81,25 @@ CREATE TABLE user_achievements (
     PRIMARY KEY (user_id, achievement_id)
 );
 
+-- Wisdom point transactions table
+CREATE TABLE wisdom_point_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    action VARCHAR(30) NOT NULL CHECK (action IN ('app_open', 'daily_challenge_complete', 'content_share', 'daily_streak', 'achievement_unlock', 'referral_success')),
+    points INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Achievement conditions table
+CREATE TABLE achievement_conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    achievement_id UUID REFERENCES achievements(id) ON DELETE CASCADE,
+    condition_type VARCHAR(30) NOT NULL CHECK (condition_type IN ('wisdom_points', 'streak_days', 'messages_generated', 'challenges_completed', 'shares_made')),
+    threshold INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Audio cache table for TTS
 CREATE TABLE audio_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -112,6 +131,13 @@ CREATE INDEX idx_daily_challenges_locale ON daily_challenges(locale);
 
 CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
 CREATE INDEX idx_user_achievements_earned_at ON user_achievements(earned_at);
+
+CREATE INDEX idx_wisdom_point_transactions_user_id ON wisdom_point_transactions(user_id);
+CREATE INDEX idx_wisdom_point_transactions_created_at ON wisdom_point_transactions(created_at);
+CREATE INDEX idx_wisdom_point_transactions_action ON wisdom_point_transactions(action);
+
+CREATE INDEX idx_achievement_conditions_achievement_id ON achievement_conditions(achievement_id);
+CREATE INDEX idx_achievement_conditions_type ON achievement_conditions(condition_type);
 
 CREATE INDEX idx_audio_cache_message_id ON audio_cache(message_id);
 CREATE INDEX idx_audio_cache_voice ON audio_cache(voice);
