@@ -290,3 +290,6 @@ export function logCostMetrics(logger: Logger, metrics: CostMetrics, context?: L
 
 // Default logger instance
 export const defaultLogger = createLogger('aura-flow')
+
+// Export logger as the default logger for convenience
+export const logger = defaultLogger

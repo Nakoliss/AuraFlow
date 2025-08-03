@@ -4,7 +4,10 @@ import {
     AuthService,
     authService,
     extractTokenFromHeader,
-    type TokenPair
+    type TokenPair,
+    UserService,
+    userService,
+    initializeDatabase
 } from '@aura-flow/common'
 import {
     AuthenticationError,
@@ -46,14 +49,15 @@ interface ErrorResponse {
     code?: string
 }
 
-// Mock user database - in production this would be replaced with actual database calls
-const mockUsers = new Map<string, {
-    id: string
-    email: string
-    passwordHash: string
-    subscriptionStatus: 'free' | 'premium_core' | 'voice_pack'
-    createdAt: Date
-}>()
+// Initialize database connection
+let dbInitialized = false
+async function ensureDbInitialized() {
+    if (!dbInitialized) {
+        await initializeDatabase()
+        dbInitialized = true
+        logger.info('Database initialized for auth routes')
+    }
+}
 
 // Helper function to validate email format
 function isValidEmail(email: string): boolean {
@@ -67,19 +71,11 @@ function isValidPassword(password: string): boolean {
     return password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password)
 }
 
-// Helper function to find user by email
-function findUserByEmail(email: string) {
-    for (const user of mockUsers.values()) {
-        if (user.email.toLowerCase() === email.toLowerCase()) {
-            return user
-        }
-    }
-    return null
-}
-
 // POST /auth/login - User login
 auth.post('/login', async (c) => {
     try {
+        await ensureDbInitialized()
+        
         const body = await c.req.json() as LoginRequest
 
         // Validate request body
@@ -99,9 +95,9 @@ auth.post('/login', async (c) => {
             }, 400)
         }
 
-        // Find user
-        const user = findUserByEmail(body.email)
-        if (!user) {
+        // Find user in database with password hash
+        const userWithPassword = await userService.findUserByEmailForAuth(body.email)
+        if (!userWithPassword) {
             logger.warn('Login attempt for non-existent user', { email: body.email })
             return c.json<ErrorResponse>({
                 error: 'Authentication Error',
@@ -110,11 +106,11 @@ auth.post('/login', async (c) => {
         }
 
         // Verify password
-        const isPasswordValid = await authService.verifyPassword(body.password, user.passwordHash)
+        const isPasswordValid = await authService.verifyPassword(body.password, userWithPassword.passwordHash)
         if (!isPasswordValid) {
             logger.warn('Login attempt with invalid password', {
                 email: body.email,
-                userId: user.id
+                userId: userWithPassword.id
             })
             return c.json<ErrorResponse>({
                 error: 'Authentication Error',
@@ -124,22 +120,22 @@ auth.post('/login', async (c) => {
 
         // Generate tokens
         const tokens = authService.generateTokens({
-            id: user.id,
-            email: user.email,
-            subscriptionStatus: user.subscriptionStatus
+            id: userWithPassword.id,
+            email: userWithPassword.email,
+            subscriptionStatus: userWithPassword.subscriptionStatus
         })
 
         logger.info('User logged in successfully', {
-            userId: user.id,
-            email: user.email,
-            subscriptionStatus: user.subscriptionStatus
+            userId: userWithPassword.id,
+            email: userWithPassword.email,
+            subscriptionStatus: userWithPassword.subscriptionStatus
         })
 
         return c.json<AuthResponse>({
             user: {
-                id: user.id,
-                email: user.email,
-                subscriptionStatus: user.subscriptionStatus
+                id: userWithPassword.id,
+                email: userWithPassword.email,
+                subscriptionStatus: userWithPassword.subscriptionStatus
             },
             tokens
         })
@@ -156,6 +152,8 @@ auth.post('/login', async (c) => {
 // POST /auth/register - User registration
 auth.post('/register', async (c) => {
     try {
+        await ensureDbInitialized()
+        
         const body = await c.req.json() as RegisterRequest
 
         // Validate request body
@@ -192,30 +190,15 @@ auth.post('/register', async (c) => {
             }, 400)
         }
 
-        // Check if user already exists
-        const existingUser = findUserByEmail(body.email)
-        if (existingUser) {
-            logger.warn('Registration attempt for existing user', { email: body.email })
-            return c.json<ErrorResponse>({
-                error: 'Validation Error',
-                message: 'User with this email already exists'
-            }, 409)
-        }
-
         // Hash password
         const passwordHash = await authService.hashPassword(body.password)
 
-        // Create new user
-        const newUser = {
-            id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-            email: body.email.toLowerCase(),
+        // Create new user in database
+        const newUser = await userService.createUser({
+            email: body.email,
             passwordHash,
-            subscriptionStatus: 'free' as const,
-            createdAt: new Date()
-        }
-
-        // Store user (in production, this would be a database insert)
-        mockUsers.set(newUser.id, newUser)
+            timezone: 'UTC' // Default timezone, could be extracted from request
+        })
 
         // Generate tokens
         const tokens = authService.generateTokens({
@@ -240,6 +223,14 @@ auth.post('/register', async (c) => {
         }, 201)
 
     } catch (error) {
+        if (error instanceof ValidationError) {
+            logger.warn('Registration validation error', { message: error.message })
+            return c.json<ErrorResponse>({
+                error: 'Validation Error',
+                message: error.message
+            }, 400)
+        }
+
         logger.error('Registration error', {}, error as Error)
         return c.json<ErrorResponse>({
             error: 'Internal Server Error',
@@ -263,7 +254,7 @@ auth.post('/refresh', async (c) => {
         }
 
         // Refresh tokens
-        const newTokens = authService.refreshToken(body.refreshToken)
+        const newTokens = authService.refreshAccessToken(body.refreshToken)
 
         // Get user info from the new access token
         const payload = authService.verifyAccessToken(newTokens.accessToken)
@@ -297,6 +288,8 @@ auth.post('/refresh', async (c) => {
 // POST /auth/logout - Logout user (revoke tokens)
 auth.post('/logout', async (c) => {
     try {
+        await ensureDbInitialized()
+        
         const authHeader = c.req.header('Authorization')
 
         if (!authHeader) {
@@ -310,7 +303,7 @@ auth.post('/logout', async (c) => {
         const payload = authService.verifyAccessToken(token)
 
         // Revoke tokens
-        authService.revokeTokens(token)
+        authService.revokeToken(token)
 
         logger.info('User logged out successfully', {
             userId: payload.userId,
@@ -352,7 +345,7 @@ auth.get('/me', async (c) => {
         const payload = authService.verifyAccessToken(token)
 
         // Find user details
-        const user = mockUsers.get(payload.userId)
+        const user = await userService.findUserById(payload.userId)
         if (!user) {
             logger.warn('Token valid but user not found', { userId: payload.userId })
             return c.json<ErrorResponse>({

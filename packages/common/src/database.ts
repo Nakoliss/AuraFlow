@@ -1,20 +1,15 @@
 // Database connection utilities and types for AuraFlow
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { createLogger } from './logging'
 import { DatabaseError } from './errors'
 
 const logger = createLogger('database')
 
-// Database configuration interface
+// Database configuration interface for Supabase
 export interface DatabaseConfig {
-    host: string
-    port: number
-    database: string
-    username: string
-    password: string
-    ssl?: boolean
-    maxConnections?: number
-    idleTimeoutMillis?: number
-    connectionTimeoutMillis?: number
+    supabaseUrl: string
+    supabaseAnonKey: string
+    supabaseServiceKey?: string // For admin operations
 }
 
 // Connection pool interface (would be implemented with actual DB driver)
@@ -36,80 +31,83 @@ export interface DatabaseResult<T = any> {
     command: string
 }
 
-// Mock database pool implementation for development
-class MockDatabasePool implements DatabasePool {
-    private isConnected = false
-    private mockData: Map<string, any[]> = new Map()
+// Supabase database pool implementation
+class SupabaseDatabasePool implements DatabasePool {
+    private supabase: SupabaseClient
+    private config: DatabaseConfig
 
-    constructor(private config: DatabaseConfig) {
-        this.initializeMockData()
-    }
-
-    private initializeMockData() {
-        // Initialize with empty tables
-        this.mockData.set('users', [])
-        this.mockData.set('generated_messages', [])
-        this.mockData.set('daily_drops', [])
-        this.mockData.set('daily_challenges', [])
-        this.mockData.set('achievements', [])
-        this.mockData.set('user_achievements', [])
-        this.mockData.set('audio_cache', [])
+    constructor(config: DatabaseConfig) {
+        this.config = config
+        this.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey)
+        
+        logger.info('Supabase client initialized', {
+            url: config.supabaseUrl,
+            hasServiceKey: !!config.supabaseServiceKey
+        })
     }
 
     async query<T = any>(text: string, params: any[] = []): Promise<DatabaseResult<T>> {
-        logger.debug('Executing query', { query: text, params })
+        try {
+            logger.debug('Executing raw SQL query', { query: text, params })
 
-        // Simple mock implementation - in real app this would use pg or similar
-        const command = text.trim().split(' ')[0].toUpperCase()
+            // Use Supabase's RPC for raw SQL queries
+            const { data, error } = await this.supabase.rpc('execute_sql', {
+                query: text,
+                params: params || []
+            })
 
-        // Mock some basic operations
-        if (command === 'SELECT') {
-            return {
-                rows: [] as T[],
-                rowCount: 0,
-                command: 'SELECT'
+            if (error) {
+                logger.error('SQL query failed', { query: text, error: error.message })
+                throw new DatabaseError(`Query execution failed: ${error.message}`, 'query')
             }
-        }
 
-        if (command === 'INSERT') {
-            return {
-                rows: [{ id: this.generateMockId() }] as T[],
-                rowCount: 1,
-                command: 'INSERT'
+            const result: DatabaseResult<T> = {
+                rows: data || [],
+                rowCount: data?.length || 0,
+                command: text.trim().split(' ')[0].toUpperCase()
             }
-        }
 
-        return {
-            rows: [] as T[],
-            rowCount: 0,
-            command
+            logger.debug('Query executed successfully', {
+                command: result.command,
+                rowCount: result.rowCount
+            })
+
+            return result
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            logger.error('Database query failed', { query: text, params, error: errorMessage })
+            throw new DatabaseError(`Query execution failed: ${errorMessage}`, 'query')
         }
     }
 
     async transaction<T>(callback: (client: DatabaseClient) => Promise<T>): Promise<T> {
         logger.debug('Starting transaction')
 
+        // Supabase doesn't have explicit transaction support in the client
+        // We'll simulate it by creating a client that can be used for multiple operations
         const client: DatabaseClient = {
             query: this.query.bind(this)
         }
 
         try {
             const result = await callback(client)
-            logger.debug('Transaction committed')
+            logger.debug('Transaction completed')
             return result
         } catch (error) {
-            logger.error('Transaction rolled back', {}, error as Error)
+            logger.error('Transaction failed', {}, error as Error)
             throw error
         }
     }
 
     async end(): Promise<void> {
-        this.isConnected = false
-        logger.info('Database connection pool closed')
+        // Supabase client doesn't need explicit cleanup
+        logger.info('Database connection closed')
     }
 
-    private generateMockId(): string {
-        return crypto.randomUUID()
+    // Get the underlying Supabase client for direct operations
+    getSupabaseClient(): SupabaseClient {
+        return this.supabase
     }
 }
 
@@ -122,20 +120,43 @@ class DatabaseManager {
         this.config = config
 
         try {
-            // In production, this would create a real connection pool
-            // For now, we'll use the mock implementation
-            this.pool = new MockDatabasePool(config)
+            // Create real Supabase connection pool
+            this.pool = new SupabaseDatabasePool(config)
+
+            // Test the connection
+            await this.testConnection()
 
             logger.info('Database connection pool initialized', {
-                host: config.host,
-                database: config.database,
-                maxConnections: config.maxConnections
+                supabaseUrl: config.supabaseUrl,
+                hasServiceKey: !!config.supabaseServiceKey
             })
         } catch (error) {
             throw new DatabaseError(
                 `Failed to initialize database connection: ${(error as Error).message}`,
                 'initialize'
             )
+        }
+    }
+
+    private async testConnection(): Promise<void> {
+        try {
+            // For Supabase, we'll test by trying to access the client directly
+            const supabasePool = this.pool as SupabaseDatabasePool
+            const supabase = supabasePool.getSupabaseClient()
+            
+            // Simple test - try to query a system table or just verify the client works
+            const { error } = await supabase.from('users').select('count').limit(1)
+            
+            // During setup, tables might not exist yet, so we'll be more permissive
+            // Only fail if it's a real connection/auth error
+            if (error && !error.message.includes('does not exist') && error.code !== 'PGRST116') {
+                throw new Error(`Supabase connection test failed: ${error.message}`)
+            }
+            
+            logger.info('Database connection test successful')
+        } catch (error) {
+            logger.error('Database connection test failed', {}, error as Error)
+            throw new DatabaseError('Database connection test failed', 'connection_test')
         }
     }
 
@@ -156,6 +177,16 @@ class DatabaseManager {
 
     isInitialized(): boolean {
         return this.pool !== null
+    }
+
+    getSupabaseClient(): SupabaseClient {
+        if (!this.pool) {
+            throw new DatabaseError('Database not initialized. Call initialize() first.')
+        }
+        if (this.pool instanceof SupabaseDatabasePool) {
+            return this.pool.getSupabaseClient()
+        }
+        throw new DatabaseError('Database not initialized with Supabase')
     }
 }
 
@@ -227,16 +258,19 @@ function extractTableName(query: string): string {
 
 // Database configuration from environment variables
 export function getDatabaseConfig(): DatabaseConfig {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new DatabaseError(
+            'Missing required Supabase environment variables: SUPABASE_URL and SUPABASE_ANON_KEY must be set'
+        )
+    }
+
     return {
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432'),
-        database: process.env.DB_NAME || 'aura_flow',
-        username: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || '',
-        ssl: process.env.DB_SSL === 'true',
-        maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
-        idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'),
-        connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '2000')
+        supabaseUrl,
+        supabaseAnonKey,
+        supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY
     }
 }
 
@@ -250,6 +284,14 @@ export async function initializeDatabase(config?: DatabaseConfig): Promise<void>
 export async function closeDatabase(): Promise<void> {
     await db.close()
 }
+
+// Get Supabase client for direct operations
+export function getSupabaseClient(): SupabaseClient {
+    return db.getSupabaseClient()
+}
+
+// Export database manager as DatabaseService for backward compatibility
+export const DatabaseService = db
 
 // Get a database client for transactions
 export async function getClient(): Promise<DatabaseClient> {

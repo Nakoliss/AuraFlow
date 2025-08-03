@@ -621,3 +621,6 @@ export class SemanticDeduplicationService {
     }
   }
 }
+
+// Export alias for backward compatibility
+export const DeduplicationService = SemanticDeduplicationService

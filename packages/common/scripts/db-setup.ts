@@ -1,7 +1,11 @@
 #!/usr/bin/env ts-node
 
 // Database setup script for AuraFlow
+import { config } from 'dotenv'
 import { initializeDatabase, closeDatabase } from '../src/database'
+
+// Load environment variables
+config()
 import { runMigrations, getMigrationStatus } from '../src/migrations'
 import { seedDatabase, clearDatabase, getSampleCredentials } from '../src/seeds'
 import { createLogger } from '../src/logging'
@@ -23,12 +27,9 @@ Usage:
   pnpm db:setup       - Full setup (migrate + seed)
 
 Environment Variables:
-  DB_HOST             - Database host (default: localhost)
-  DB_PORT             - Database port (default: 5432)
-  DB_NAME             - Database name (default: aura_flow)
-  DB_USER             - Database user (default: postgres)
-  DB_PASSWORD         - Database password
-  DB_SSL              - Use SSL (default: false)
+  SUPABASE_URL        - Supabase project URL (required)
+  SUPABASE_ANON_KEY   - Supabase anonymous key (required)
+  SUPABASE_SERVICE_KEY - Supabase service key (for admin operations)
 `)
         process.exit(0)
     }

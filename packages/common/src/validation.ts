@@ -3,6 +3,10 @@ import { ValidationError } from './errors'
 import type { MessageCategory, SubscriptionTier } from './types'
 import { MESSAGE_CATEGORIES, SUBSCRIPTION_TIERS } from './constants'
 
+// Re-export zod for convenience
+import { z } from 'zod'
+export { z }
+
 // Basic validation functions
 export function isRequired(value: any, fieldName: string): void {
     if (value === null || value === undefined || value === '') {
@@ -240,4 +244,30 @@ export function validateFields(validations: Array<() => void>): ValidationResult
         isValid: errors.length === 0,
         errors
     }
+}
+
+// Request validation utilities
+export function validateRequest<T>(
+    schema: any, // zod schema
+    data: unknown
+): T {
+    try {
+        return schema.parse(data)
+    } catch (error: any) {
+        if (error.errors) {
+            const firstError = error.errors[0]
+            throw new ValidationError(
+                `${firstError.path.join('.')}: ${firstError.message}`,
+                firstError.path.join('.')
+            )
+        }
+        throw new ValidationError('Invalid request data')
+    }
+}
+
+export function validateSchema<T>(
+    data: unknown,
+    schema: any // zod schema
+): T {
+    return validateRequest<T>(schema, data)
 }
