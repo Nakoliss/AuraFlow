@@ -254,7 +254,7 @@ auth.post('/refresh', async (c) => {
         }
 
         // Refresh tokens
-        const newTokens = authService.refreshAccessToken(body.refreshToken)
+        const newTokens = authService.refreshToken(body.refreshToken)
 
         // Get user info from the new access token
         const payload = authService.verifyAccessToken(newTokens.accessToken)
@@ -303,7 +303,7 @@ auth.post('/logout', async (c) => {
         const payload = authService.verifyAccessToken(token)
 
         // Revoke tokens
-        authService.revokeToken(token)
+        authService.revokeTokens(token)
 
         logger.info('User logged out successfully', {
             userId: payload.userId,

@@ -1,6 +1,7 @@
 name = "aura-flow-api"
 main = "src/index.ts"
 compatibility_date = "2023-10-30"
+node_compat = true
 
 [env.development]
 name = "aura-flow-api-dev"
