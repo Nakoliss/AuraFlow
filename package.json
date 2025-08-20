@@ -4,8 +4,7 @@
   "private": true,
   "description": "AuraFlow - AI-powered motivational content platform",
   "workspaces": [
-    "apps/*",
-    "workers/*",
+    "apps/mobile",
     "packages/*"
   ],
   "scripts": {

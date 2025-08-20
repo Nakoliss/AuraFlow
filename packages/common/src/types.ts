@@ -141,7 +141,7 @@ export interface AIServiceConfig {
 }
 
 // Payment and Subscription Types
-export type Platform = 'ios' | 'android' | 'web'
+export type Platform = 'ios' | 'android'
 
 export type EntitlementType = 'premium_core' | 'voice_pack'
 
