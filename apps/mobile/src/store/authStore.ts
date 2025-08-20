@@ -82,6 +82,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  loginWithGoogle: async () => {
+    set({ isLoading: true })
+    
+    try {
+      // TODO: Implement Google Sign-In with @react-native-google-signin/google-signin
+      console.log('Google Sign-In initiated')
+      
+      // Simulate Google auth response
+      const mockUser: User = {
+        id: 'google-user-123',
+        email: 'user@gmail.com',
+        wisdomPoints: 1,
+        streakCount: 1,
+        subscriptionStatus: 'free',
+        achievements: ['first-steps']
+      }
+
+      set({ 
+        user: mockUser, 
+        isAuthenticated: true, 
+        isLoading: false 
+      })
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
+  },
+
   logout: () => {
     set({ 
       user: null, 

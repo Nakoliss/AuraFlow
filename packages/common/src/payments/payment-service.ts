@@ -44,9 +44,14 @@ export class PaymentService {
 
             if (request.platform === 'web') {
                 return await this.stripeService.createSubscription(request)
-            } else {
+            } else if (request.platform === 'ios' || request.platform === 'android') {
                 // Mobile platforms use RevenueCat
                 return await this.revenueCatService.processSubscription(request)
+            } else {
+                throw new AppError(
+                    'Unsupported platform for mobile-only app',
+                    ErrorCode.VALIDATION_ERROR
+                )
             }
         } catch (error) {
             logger.error('Failed to process subscription', { error, request })

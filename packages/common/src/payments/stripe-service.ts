@@ -264,7 +264,7 @@ export class StripeService {
                 entitlements.push({
                     type: entitlementType,
                     expiresAt,
-                    platform: 'web',
+                    platform: 'ios', // Default to iOS for mobile-only app
                     isActive
                 })
             }
