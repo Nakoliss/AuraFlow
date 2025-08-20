@@ -5,7 +5,7 @@
   "description": "AuraFlow API built with Cloudflare Workers",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "echo 'Wrangler dev not supported in WebContainer. Use local environment for Cloudflare Workers development.'",
     "deploy": "wrangler deploy",
     "build": "tsc",
     "test": "vitest --run",
